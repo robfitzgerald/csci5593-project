@@ -26,15 +26,15 @@ where
 
   a. baseline
 
-    *send/recv
+    * send/recv
       
       for all combinations of nodes in heracles
         
       test 1000 or so messages between the combination to generate a baseline message cost between all nodes
     
-    *broadcast
+    * broadcast
 
-    *scatter/gather
+    * scatter/gather
 
   b. general topology experiments @mkalan
 
