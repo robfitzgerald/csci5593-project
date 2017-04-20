@@ -10,3 +10,35 @@ where
                comma-delimited list is acceptable (i.e. [3,4])
   <program>    absolute path to compiled program
 ```
+
+### agenda
+
+1.template @robfitzgerald
+  argv parameters
+    # of nodes
+    # of processes
+    # of messages to pass at a time
+    # of iterations of a test
+
+2.tests
+  a.baseline
+    send/recv
+      for all combinations of nodes in heracles
+        test 1000 or so messages between the combination to generate a baseline message cost between all nodes
+    broadcast
+    scatter/gather
+
+  b.general topology experiments @mkalan
+    ring
+    star
+    complete graph
+  c.broadcast
+    crank up payload size
+  d.scatter/gather
+    crank up workload/payload size
+
+3.rdma
+  run tests on messaging in rdma
+
+4.analysis
+  excel? python?
