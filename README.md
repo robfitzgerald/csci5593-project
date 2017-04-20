@@ -15,16 +15,19 @@ where
 
 1. template @robfitzgerald
   - argv parameters
-    * # of nodes
-    * # of processes
-    * # of messages to pass at a time
-    * # of iterations of a test
+    * number of nodes
+    * number of processes
+    * number of messages to pass at a time
+    * number of iterations of a test
 
 2. tests
   a. baseline
     *send/recv
-      ⋅⋅⋅for all combinations of nodes in heracles
-        ⋅⋅⋅test 1000 or so messages between the combination to generate a baseline message cost between all nodes
+      
+      for all combinations of nodes in heracles
+        
+        test 1000 or so messages between the combination to generate a baseline message cost between all nodes
+    
     *broadcast
     *scatter/gather
 
