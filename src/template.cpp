@@ -1,7 +1,7 @@
-// compile: mpicc <filename>
+// compile: mpic++ <filename>
 // run: srun --mpi=pmi2 -n<number of processes> -w "node[3,4]" <absolute-path-to-file>
 
-// srun --mpi=pmi2 -n6 -w "node[3,4]" /home/robert.fitzgerald/csc5593/project/csci5593-project/src/a.out
+// srun --mpi=pmi2 -n6 -w "node[3,4]" /home/robert.fitzgerald/csc5593/project/csci5593-project/src/a.out myTest 100 500
 
 #include <mpi.h>
 #include <sys/time.h>
