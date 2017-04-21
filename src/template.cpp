@@ -73,7 +73,7 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName)
   float seconds = timeDelta(start, end);
 
   // logging example
-  logger(LogData(conf.testName,"a node id",0,1,seconds,"demonstration"));
+  logger(LogData(conf.testName,nodeName,proc,98765,seconds,"demonstration"));
 
   // function returns true on success
   return true;
@@ -133,7 +133,7 @@ float timeDelta(timeval start, timeval end)
 
 void logger(LogData l)
 {
-  printf("%s,%s,%i,%i,%f,%s",l.testName,l.thisNode,l.thisID,l.thatID,l.timeDelta,l.message);
+  printf("%s,%s,%i,%i,%f,%s\n",l.testName,l.thisNode,l.thisID,l.thatID,l.timeDelta,l.message);
   // std::cout << l.testName << "," 
   //           << l.thisNode << "," 
   //           << l.thisID << ","
