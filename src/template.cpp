@@ -1,17 +1,23 @@
-// #include <mpi.h>
-// #include <ctime>
+// compile: g++ <filename>
+// run: srun --mpi=pmi2 -n<number of processes> -w "node[3,4]" <absolute-path-to-file>
+
+// srun --mpi=pmi2 -n6 -w "node[3,4]" /home/robert.fitzgerald/csc5593/project/csci5593-project/src/a.out
+
+#include <mpi.h>
 #include <sys/time.h>
 #include <string>
 #include <cstdlib>
 #include <iostream>
 
+bool parseArgs(int, char**, TestConfig&);
+void log(LogData);
+void storeTime(timeval&);
+float timeDelta(timeval, timeval);
 struct timeval start, end;
-struct TestConfig
-{
-  std::string testName; 
-  unsigned nodes, processes, iterations, messages;  
-};
 
+/**
+ * object used to call the logging service
+ */
 struct LogData
 {
   LogData (std::string name, std::string node, unsigned me, unsigned you, double t, std::string msg = ""):
@@ -26,48 +32,35 @@ struct LogData
   double timeDelta;
 };
 
-bool parseArgs(int, char**, TestConfig&);
-bool runTest(TestConfig);
-void log(LogData);
-void storeTime(timeval&);
-float timeDelta(timeval, timeval);
-
-
-int main (int argc, char** argv)
+/**
+ * object used to hold command line arguments
+ */
+struct TestConfig
 {
-  TestConfig conf;
-  
-  if (!parseArgs(argc, argv, conf))
-    std::cout << "usage: <testName> <# nodes> <# processes> <# iterations> <# messages>\n";
-  else 
-    if (!runTest(conf)) 
-      return EXIT_FAILURE;
-    else
-      return EXIT_SUCCESS;
-}
+  std::string testName; 
+  unsigned iterations, messages;  
+};
 
 /**
  * this is where we will inject our test
  * @param  conf : configuration called from command line
  * @return true on success
  */
-bool runTest(TestConfig conf)
+bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName)
 {
-  bool somethingBadHappened = false;
-  if (somethingBadHappened)
-    return false;
 
   // time tracking example
   storeTime(start);
   
-  // remove this
+  // just demonstrating the config values we received
   std::cout << "runTest called with TestConfig:\n" 
             << "testName: " << conf.testName << ", " 
-            << "nodes: " << conf.nodes << ", "
-            << "processes: " << conf.processes << ", "
             << "iterations: " << conf.iterations << ", "
-            << "messages: " << conf.messages << ".\n";
+            << "messages: " << conf.messages << ".\n"
+            << "for process " << proc << " of " << numProcs
+            << " on node " << nodeName << "\n";
 
+  //
   //
   // code goes here
   //
@@ -79,7 +72,47 @@ bool runTest(TestConfig conf)
   // logging example
   log(LogData(conf.testName,"a node id",0,1,seconds,"demonstration"));
 
+  // function returns true on success
   return true;
+}
+
+
+
+
+
+
+int main (int argc, char** argv)
+{
+  TestConfig conf;
+  
+  MPI_Init(NULL, NULL);
+
+  // Get the number of processes
+  int world_size;
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
+  // Get the rank of the process
+  int world_rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+
+  // Get the name of the processor
+  char processor_name[MPI_MAX_PROCESSOR_NAME];
+  int name_len;
+  MPI_Get_processor_name(processor_name, &name_len);
+  std::string nodeName = processor_name;
+
+  if (!parseArgs(argc, argv, conf))
+    std::cout << "usage: <testName> <# iterations> <# messages>\n";
+  else 
+    if (!runTest(conf, world_rank, world_size, nodeName)) {
+      MPI_Finalize();
+      return EXIT_FAILURE;
+    }
+    else
+    {
+      MPI_Finalize();
+      return EXIT_SUCCESS;
+    }
 }
 
 void storeTime(timeval &t)
@@ -108,17 +141,15 @@ void log(LogData l)
 
 bool parseArgs(int argc, char** argv, TestConfig& result)
 {
-  if (argc < 6)
+  if (argc < 4)
   {
     return false;
   }
   else
   {
     result.testName = argv[1];
-    result.nodes = atoi(argv[2]);
-    result.processes = atoi(argv[3]);
-    result.iterations = atoi(argv[4]);
-    result.messages = atoi(argv[5]);
+    result.iterations = atoi(argv[2]);
+    result.messages = atoi(argv[3]);
     return true;
   }
 }
