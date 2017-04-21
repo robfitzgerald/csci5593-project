@@ -1,4 +1,4 @@
-// compile: g++ <filename>
+// compile: mpicc <filename>
 // run: srun --mpi=pmi2 -n<number of processes> -w "node[3,4]" <absolute-path-to-file>
 
 // srun --mpi=pmi2 -n6 -w "node[3,4]" /home/robert.fitzgerald/csc5593/project/csci5593-project/src/a.out
@@ -9,10 +9,6 @@
 #include <cstdlib>
 #include <iostream>
 
-bool parseArgs(int, char**, TestConfig&);
-void log(LogData);
-void storeTime(timeval&);
-float timeDelta(timeval, timeval);
 struct timeval start, end;
 
 /**
@@ -40,6 +36,12 @@ struct TestConfig
   std::string testName; 
   unsigned iterations, messages;  
 };
+
+bool parseArgs(int, char**, TestConfig&);
+void logger(LogData);
+void storeTime(timeval&);
+float timeDelta(timeval, timeval);
+
 
 /**
  * this is where we will inject our test
@@ -70,7 +72,7 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName)
   float seconds = timeDelta(start, end);
 
   // logging example
-  log(LogData(conf.testName,"a node id",0,1,seconds,"demonstration"));
+  logger(LogData(conf.testName,"a node id",0,1,seconds,"demonstration"));
 
   // function returns true on success
   return true;
@@ -128,7 +130,7 @@ float timeDelta(timeval start, timeval end)
   return ( ( end.tv_sec  - start.tv_sec ) * 1000.0 ) + ( ( end.tv_usec - start.tv_usec ) / 1000.0 );
 }
 
-void log(LogData l)
+void logger(LogData l)
 {
   std::cout << l.testName << "," 
             << l.thisNode << "," 
