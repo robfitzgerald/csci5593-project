@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <string>
 #include <cstdlib>
+#include <cstdio>
 #include <iostream>
 
 struct timeval start, end;
@@ -132,12 +133,13 @@ float timeDelta(timeval start, timeval end)
 
 void logger(LogData l)
 {
-  std::cout << l.testName << "," 
-            << l.thisNode << "," 
-            << l.thisID << ","
-            << l.thatID << ","
-            << l.timeDelta << ","
-            << l.message <<"\n";
+  printf("%s,%s,%i,%i,%f,%s",l.testName,l.thisNode,l.thisID,l.thatID,l.timeDelta,l.message);
+  // std::cout << l.testName << "," 
+  //           << l.thisNode << "," 
+  //           << l.thisID << ","
+  //           << l.thatID << ","
+  //           << l.timeDelta << ","
+  //           << l.message <<"\n";
 }
 
 
