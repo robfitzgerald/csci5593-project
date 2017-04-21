@@ -1,16 +1,16 @@
 // #include <mpi.h>
-#include <ctime>
+// #include <ctime>
+#include <sys/time.h>
 #include <string>
 #include <cstdlib>
 #include <iostream>
 
-
+struct timeval start, end;
 struct TestConfig
 {
   std::string testName; 
   unsigned nodes, processes, iterations, messages;  
 };
-
 
 struct LogData
 {
@@ -26,11 +26,11 @@ struct LogData
   double timeDelta;
 };
 
-
 bool parseArgs(int, char**, TestConfig&);
 bool runTest(TestConfig);
 void log(LogData);
-
+void storeTime(timeval&);
+float timeDelta(timeval, timeval);
 
 
 int main (int argc, char** argv)
@@ -46,31 +46,54 @@ int main (int argc, char** argv)
       return EXIT_SUCCESS;
 }
 
-
+/**
+ * this is where we will inject our test
+ * @param  conf : configuration called from command line
+ * @return true on success
+ */
 bool runTest(TestConfig conf)
 {
   bool somethingBadHappened = false;
   if (somethingBadHappened)
     return false;
 
-  time_t startTime, endTime;
-  time(&startTime);
+  // time tracking example
+  storeTime(start);
   
+  // remove this
   std::cout << "runTest called with TestConfig:\n" 
             << "testName: " << conf.testName << ", " 
             << "nodes: " << conf.nodes << ", "
             << "processes: " << conf.processes << ", "
             << "iterations: " << conf.iterations << ", "
             << "messages: " << conf.messages << ".\n";
-  
-  time(&endTime);
-  double seconds = difftime(startTime, endTime);
 
+  //
+  // code goes here
+  //
+  //
+  
+  storeTime(end);
+  float seconds = timeDelta(start, end);
+
+  // logging example
   log(LogData(conf.testName,"a node id",0,1,seconds,"demonstration"));
 
   return true;
 }
 
+void storeTime(timeval &t)
+{
+  gettimeofday( &t, NULL );
+}
+
+/**
+ * taken from stats_s.c homework assignment
+ */
+float timeDelta(timeval start, timeval end)
+{
+  return ( ( end.tv_sec  - start.tv_sec ) * 1000.0 ) + ( ( end.tv_usec - start.tv_usec ) / 1000.0 );
+}
 
 void log(LogData l)
 {
