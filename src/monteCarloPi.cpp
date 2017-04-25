@@ -10,6 +10,8 @@
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 
 struct timeval start, end;
 const int DEFAULT_TAG = 0;
@@ -56,12 +58,13 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName)
 {
   srand(time(NULL));
   double x, y, dart;
+  int i, j;
   float seconds;
   unsigned myCount = 0;  
-  if (bundled) 
+  if (true /*conf.bundled*/) 
   {
     storeTime(start);
-    for (int i = 0; i < conf.iterations; ++i)
+    for (i = 0; i < conf.iterations; ++i)
     {
       x = ((double) rand() / RAND_MAX);
       y = ((double) rand() / RAND_MAX);
@@ -71,10 +74,10 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName)
     }
     if (proc != 0)
     {
-      MPI_Send(myCount&, 1, MPI_UNSIGNED, 0, DEFAULT_TAG, MPI_COMM_WORLD);
+      MPI_Send(&myCount, 1, MPI_UNSIGNED, 0, DEFAULT_TAG, MPI_COMM_WORLD);
       storeTime(end);
       seconds = timeDelta(start, end);
-      logger(LogData(conf.testName,nodeName,proc,0,seconds,"returning bundled result"));
+      logger(LogData(conf.testName,nodeName,proc,0,seconds,"sending-reduce"));
     } else {        // -- MASTER
       storeTime(end);
       // not sure we want to log the master node work load w/o associated send/recv
@@ -84,14 +87,19 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName)
       for (j = 1; j < numProcs; ++j)
       {
         storeTime(start);
-        MPI_Recv(theirCount&, 1, MPI_UNSIGNED, j, DEFAULT_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(&theirCount, 1, MPI_UNSIGNED, j, DEFAULT_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         myCount += theirCount;
         storeTime(end);
         seconds = timeDelta(start, end);
-        logger(LogData(conf.testName,nodeName,j,proc,seconds,"master done gathering"));
+        logger(LogData(conf.testName,nodeName,j,proc,seconds,"receiving-reduce"));
       }
-      std::string pi = std::to_string((double) myCount / (numProcs + conf.iterations) * 4);
-      logger(LogData(conf.testName,nodeName,0,0,pi));
+      std::string prefix = "pi estimated at = ";
+      std::string seperator = " based on ";
+      std::string suffix = " observations.";
+      float piValue = ((float) myCount / (numProcs * conf.iterations)) * 4.0;
+      std::ostringstream pi;
+      pi << prefix << std::setprecision(6) << piValue << seperator << numProcs * conf.iterations << suffix;
+      logger(LogData(conf.testName,nodeName,0,0,0,pi.str()));
     }
     
   } else {
@@ -190,7 +198,7 @@ bool parseArgs(int argc, char** argv, TestConfig& result)
   {
     result.testName = argv[1];
     result.iterations = atoi(argv[2]);
-    result.bundled = (argv[3] == "-b" ? true : false);
+    result.bundled = (argv[3] == std::string("-b") ? true : false);
     return true;
   }
 }
