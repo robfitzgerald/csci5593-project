@@ -60,7 +60,7 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName)
   int i, j;
   float seconds;
   unsigned myCount = 0;  
-  if (conf.bundled) 
+  if (true /*conf.bundled*/) 
   {
     storeTime(start);
     for (i = 0; i < conf.iterations; ++i)
@@ -76,7 +76,7 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName)
       MPI_Send(&myCount, 1, MPI_UNSIGNED, 0, DEFAULT_TAG, MPI_COMM_WORLD);
       storeTime(end);
       seconds = timeDelta(start, end);
-      logger(LogData(conf.testName,nodeName,proc,0,seconds,"returning bundled result"));
+      logger(LogData(conf.testName,nodeName,proc,0,seconds,"sending reduce step"));
     } else {        // -- MASTER
       storeTime(end);
       // not sure we want to log the master node work load w/o associated send/recv
@@ -90,12 +90,13 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName)
         myCount += theirCount;
         storeTime(end);
         seconds = timeDelta(start, end);
-        logger(LogData(conf.testName,nodeName,j,proc,seconds,"master done gathering"));
+        logger(LogData(conf.testName,nodeName,j,proc,seconds,"receiving reduce step"));
       }
       std::string prefix = "pi = ";
-      double piValue = (double) myCount / (numProcs + conf.iterations) * 4;
+      double piValue = ((double) myCount / (numProcs + conf.iterations)) * 4;
       std::ostringstream pi;
       pi << prefix << piValue;
+      printf("%s by way of (%i / (%i + %i)) * 4", pi.str(), myCount, numProcs, conf.iterations);
       logger(LogData(conf.testName,nodeName,0,0,0,pi.str()));
     }
     
@@ -195,7 +196,7 @@ bool parseArgs(int argc, char** argv, TestConfig& result)
   {
     result.testName = argv[1];
     result.iterations = atoi(argv[2]);
-    result.bundled = (argv[3] == "-b" ? true : false);
+    result.bundled = (argv[3] == std::string("-b") ? true : false);
     return true;
   }
 }
