@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
+#include <sstream>
 
 struct timeval start, end;
 const int DEFAULT_TAG = 0;
@@ -56,12 +57,13 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName)
 {
   srand(time(NULL));
   double x, y, dart;
+  int i, j;
   float seconds;
   unsigned myCount = 0;  
-  if (bundled) 
+  if (conf.bundled) 
   {
     storeTime(start);
-    for (int i = 0; i < conf.iterations; ++i)
+    for (i = 0; i < conf.iterations; ++i)
     {
       x = ((double) rand() / RAND_MAX);
       y = ((double) rand() / RAND_MAX);
@@ -71,7 +73,7 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName)
     }
     if (proc != 0)
     {
-      MPI_Send(myCount&, 1, MPI_UNSIGNED, 0, DEFAULT_TAG, MPI_COMM_WORLD);
+      MPI_Send(&myCount, 1, MPI_UNSIGNED, 0, DEFAULT_TAG, MPI_COMM_WORLD);
       storeTime(end);
       seconds = timeDelta(start, end);
       logger(LogData(conf.testName,nodeName,proc,0,seconds,"returning bundled result"));
@@ -84,14 +86,17 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName)
       for (j = 1; j < numProcs; ++j)
       {
         storeTime(start);
-        MPI_Recv(theirCount&, 1, MPI_UNSIGNED, j, DEFAULT_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(&theirCount, 1, MPI_UNSIGNED, j, DEFAULT_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         myCount += theirCount;
         storeTime(end);
         seconds = timeDelta(start, end);
         logger(LogData(conf.testName,nodeName,j,proc,seconds,"master done gathering"));
       }
-      std::string pi = std::to_string((double) myCount / (numProcs + conf.iterations) * 4);
-      logger(LogData(conf.testName,nodeName,0,0,pi));
+      std::string prefix = "pi = ";
+      double piValue = (double) myCount / (numProcs + conf.iterations) * 4;
+      std::ostringstream pi;
+      pi << prefix << piValue;
+      logger(LogData(conf.testName,nodeName,0,0,0,pi.str()));
     }
     
   } else {
