@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 
 struct timeval start, end;
 const int DEFAULT_TAG = 0;
@@ -93,10 +94,9 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName)
         logger(LogData(conf.testName,nodeName,j,proc,seconds,"receiving reduce step"));
       }
       std::string prefix = "pi = ";
-      double piValue = ((double) myCount / (numProcs + conf.iterations)) * 4;
+      double piValue = ((double) myCount / (numProcs * conf.iterations)) * 4.0;
       std::ostringstream pi;
-      pi << prefix << piValue;
-      printf("%s by way of (%i / (%i + %i)) * 4", pi.str(), myCount, numProcs, conf.iterations);
+      pi << prefix << std::setPrecision(6) << piValue;
       logger(LogData(conf.testName,nodeName,0,0,0,pi.str()));
     }
     
