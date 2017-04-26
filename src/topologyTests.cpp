@@ -44,8 +44,10 @@ struct TestConfig
 
 bool parseArgs(int, char**, TestConfig&);
 bool ring(TestConfig, int, int, std::string);
+bool traffic(TestConfig, int, int, std::string);
 bool complete(TestConfig, int, int, std::string);
 bool star(TestConfig, int, int, int, std::string);
+bool averagetime(TestConfig, int, int, int, std::string);
 void logger(LogData);
 void storeTime(timeval&);
 float timeDelta(timeval, timeval);
@@ -60,7 +62,7 @@ std::string itoa(int);
 bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName){
 
   if(proc == 0){
-     printf("%s,%s,%s,%s,%s,%s\n","testName","thisNode","thisID","thatID","timeDelta","message");
+     printf("%s,%s,%s,%s,%s\n","thisNode","thisID","thatID","timeDelta","message");
   }  
 
   storeTime(start);
@@ -68,6 +70,10 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName){
   if(strcmp(conf.testName.c_str(), "ring") == 0){
     for(int i = 0; i < conf.iterations; ++i ){
       ring(conf,proc,numProcs,nodeName);
+    }
+  } else if(strcmp(conf.testName.c_str(), "traffic") == 0){
+    for(int i = 0; i < conf.iterations; ++i ){
+      traffic(conf,proc,numProcs,nodeName);
     }
   } else if(strcmp(conf.testName.c_str(), "complete") == 0){
     for(int i = 0; i < conf.iterations; ++i ){
@@ -83,8 +89,60 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName){
     for(int i = 0; i < conf.iterations; ++i ){
         star(conf,conf.center,proc,numProcs,nodeName);
     }
+  } else { //if(strcmp(conf.testName.c_str(), "average_time") == 0}){
+    for(int i = 0; i < conf.iterations; ++i ){
+      for(int j = 0; j < numProcs; ++j){
+        averagetime(conf,j,proc,numProcs,nodeName);
+      }
+    }
   } 
   // function returns true on success
+  return true;
+}
+
+bool averagetime(TestConfig conf, int center, int proc, int numProcs, std::string nodeName)
+{
+  int token;
+  storeTime(end);
+  float delta;
+  delta = timeDelta(start, end);
+  logger(LogData("initialize",nodeName,proc,-1,delta,"initialize"));
+  //Receive all messages if you are not center
+  if (proc != center) {
+    for(int i = 0; i < conf.messages; ++i ){
+      MPI_Recv(&token, 1, MPI_INT, center, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      storeTime(end);
+      delta = timeDelta(start, end);
+      logger(LogData(conf.testName,nodeName,proc,center,delta,"message received " + itoa(i)));
+      //Send a response
+      storeTime(start);
+      MPI_Send(&token, 1, MPI_INT, center % numProcs, 0, MPI_COMM_WORLD);
+      storeTime(end);
+      delta = timeDelta(start, end);
+      logger(LogData(conf.testName,nodeName,proc,center,delta,"message sent " + itoa(i)));
+    }
+  } else {
+  // Set the token's value if you are center
+    token = 0;
+    for(int j = 0; j < numProcs; ++j){
+      if(j != proc){
+        for(int i = 0; i < conf.messages; ++i ){
+          //Center sends message
+          storeTime(start);
+          MPI_Send(&token, 1, MPI_INT, j % numProcs, 0, MPI_COMM_WORLD);
+          storeTime(end);
+          delta = timeDelta(start, end);
+          logger(LogData(conf.testName,nodeName,proc,j,delta,"message sent " + itoa(i)));
+          //Receive responses
+          MPI_Recv(&token, 1, MPI_INT, j, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+          storeTime(end);
+          delta = timeDelta(start, end);
+          logger(LogData(conf.testName,nodeName,proc,j,delta,"message received " + itoa(i)));
+      }
+    }
+    }
+  }
+  //receive all messages after your turn to send
   return true;
 }
 
@@ -177,6 +235,64 @@ bool complete(TestConfig conf, int proc, int numProcs, std::string nodeName)
   return true;
 }
 
+bool traffic(TestConfig conf, int proc, int numProcs, std::string nodeName)
+{
+  int token;
+  float delta;  
+  bool separate = false;
+  storeTime(end); //This is dumb but it prevents negative times
+  delta = timeDelta(start, end);
+  logger(LogData("initialize",nodeName,proc,-1,delta,"initialize"));
+  //Set up processes to recieve
+  if (proc != 0 && proc != numProcs - 1) {
+    for(int i = 0; i < conf.messages; ++i ){
+      for(int j = 0; j < numProcs; ++j){
+        if((j != 0 && j != numProcs - 1) || separate ){
+          token = proc;
+          MPI_Send(&token, 1, MPI_INT, j, 0, MPI_COMM_WORLD);
+        }
+      }
+    } 
+    for(int i = 0; i < conf.messages; ++i ){
+       for(int j = 0; j < numProcs; ++j){
+        if((j != 0 && j != numProcs - 1) || separate ){
+          MPI_Recv(&token, 1, MPI_INT, j, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+      }
+    }
+  } else if (proc == 0) {
+    // Now process 0 can receive from the last process.
+    token = 0;
+    for(int i = 0; i < conf.messages; ++i ){
+      storeTime(start);
+      MPI_Send(&token, 1, MPI_INT, (numProcs -1), 0, MPI_COMM_WORLD);
+      storeTime(end);
+      delta = timeDelta(start, end);
+      logger(LogData(conf.testName,nodeName,proc,(numProcs -1),delta,"message sent " + itoa(i)));
+      MPI_Recv(&token, 1, MPI_INT, (numProcs -1), 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      storeTime(end);
+      delta = timeDelta(start, end);
+      logger(LogData(conf.testName,nodeName,proc,(numProcs -1),delta,"message received " + itoa(i)));
+    }
+  } else if (proc == (numProcs - 1)) {
+    // Now process n -1 can receive from the last process.
+    token = 0;
+    storeTime(start);
+    for(int i = 0; i < conf.messages; ++i ){
+      MPI_Recv(&token, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      storeTime(end);
+      delta = timeDelta(start, end);
+      logger(LogData(conf.testName,nodeName,proc,0,delta,"message received " + itoa(i)));
+      storeTime(start);
+      MPI_Send(&token, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+      storeTime(end);
+      delta = timeDelta(start, end);
+      logger(LogData(conf.testName,nodeName,proc,0,delta,"message sent " + itoa(i)));
+    }
+  }
+  return true;
+}
+
 bool ring(TestConfig conf, int proc, int numProcs, std::string nodeName)
 {
   struct timeval token;
@@ -237,7 +353,7 @@ int main (int argc, char** argv)
   std::string nodeName = processor_name;
 
   if (!parseArgs(argc, argv, conf)) {
-    std::cout << "usage: <testName (ring/complete/star)> <# iterations> <# messages> <(opt) star center process>\n";
+    std::cout << "usage: <testName (ring/complete/star/average_time)> <# iterations> <# messages> <(opt) star center process>\n";
   }
   else {
     if (!runTest(conf, world_rank, world_size, nodeName)) {
