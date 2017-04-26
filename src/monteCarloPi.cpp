@@ -93,7 +93,7 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName)
         seconds = timeDelta(start, end);
         logger(LogData(conf.testName,nodeName,proc,j,seconds,"receiving-reduce"));
       }
-      std::string prefix = "pi estimated at = ";
+      std::string prefix = "# pi estimated at = ";
       std::string seperator = " based on ";
       std::string suffix = " observations.";
       float piValue = ((float) myCount / (numProcs * conf.iterations)) * 4.0;
