@@ -91,7 +91,7 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName)
         myCount += theirCount;
         storeTime(end);
         seconds = timeDelta(start, end);
-        logger(LogData(conf.testName,nodeName,j,proc,seconds,"receiving-reduce"));
+        logger(LogData(conf.testName,nodeName,proc,j,seconds,"receiving-reduce"));
       }
       std::string prefix = "pi estimated at = ";
       std::string seperator = " based on ";
