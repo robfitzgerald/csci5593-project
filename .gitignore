@@ -3,3 +3,4 @@ a.out
 *.csv
 assets
 .ipynb_checkpoints
+*.class
