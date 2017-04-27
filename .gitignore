@@ -1,4 +1,6 @@
 a.out
 .DS_Store
 *.csv
+assets
+.ipynb_checkpoints
 *.class
