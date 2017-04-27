@@ -8,7 +8,7 @@ object BaselineScriptGenerator extends App {
   } else {
     val binPath: String = args(0)
     val printWriter: PrintWriter = new PrintWriter(args(1))
-    val iterations: Integer = if (args.size > 2) args(2).toInt else 1000
+    val messages: Integer = if (args.size > 2) args(2).toInt else 1000
     
     (2 to 17).combinations(2).foreach(pair => {
         // setup interpolated values
@@ -17,8 +17,8 @@ object BaselineScriptGenerator extends App {
         val revNodeList: String = pair.reverse.mkString(",")
         val revTestName: String = s"${pair(1)}-${pair(0)}"
         // generate shell script lines for this pair
-        val fwdScript: String = s"""srun --mpi=pmi2 -n2 -w "node[$fwdNodeList]" $binPath $fwdTestName $iterations 1"""
-        val revScript: String = s"""srun --mpi=pmi2 -n2 -w "node[$revNodeList]" $binPath $revTestName $iterations 1"""
+        val fwdScript: String = s"""srun --mpi=pmi2 -n2 -w "node[$fwdNodeList]" $binPath $fwdTestName 1 $messages"""
+        val revScript: String = s"""srun --mpi=pmi2 -n2 -w "node[$revNodeList]" $binPath $revTestName 1 $messages"""
         printWriter.println(fwdScript)
         printWriter.println(revScript)
       })
