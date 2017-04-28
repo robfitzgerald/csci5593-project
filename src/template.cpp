@@ -87,22 +87,22 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
   {
     // child node.  send logs
     int numLogs = logger.size();
-    char name[MAX_STRING_LENGTH] = logger.begin().name.c_str();
-    char node[MAX_STRING_LENGTH] = logger.begin().node.c_str();
-    unsigned me = logger.begin().me;
-    unsigned you = logger.begin().you;
+    char name[MAX_STRING_LENGTH] = logger.begin()->name.c_str();
+    char node[MAX_STRING_LENGTH] = logger.begin()->node.c_str();
+    unsigned me = logger.begin()->me;
+    unsigned you = logger.begin()->you;
     double time [numLogs];
     int i = 0;
     for (std::list<LogData>::iterator iter = logger.begin(); iter != logger.end(); ++iter)
     {
-      time[i] = iter->t;
+      time[i] = iter->timeDelta;
       ++i;
     }
     char messages[numLogs][MAX_STRING_LENGTH];
     i = 0;
     for (std::list<LogData>::iterator iter = logger.begin(); iter != logger.end(); ++iter)
     {
-      messages[i] = i->msg.c_str();
+      strcpy(messages[i], iter->msg.c_str());
       ++i;
     }
 
@@ -115,7 +115,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
     MPI_Send(&messages, numLogs * MAX_STRING_LENGTH, MPI_CHAR, 0, 7, MPI_COMM_WORLD);
   } else {
     // master node.  receive logs
-    for (int p = 1; p < numProcs; ++i)
+    for (int p = 1; p < numProcs; ++p)
     {
       int numLogs;
       char name[MAX_STRING_LENGTH];
