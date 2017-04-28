@@ -9,8 +9,10 @@
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
+#include <list>
 
 struct timeval start, end;
+const int MAX_STRING_LENGTH = 50;
 
 /**
  * object used to call the logging service
@@ -49,7 +51,7 @@ float timeDelta(timeval, timeval);
  * @param  conf : configuration called from command line
  * @return true on success
  */
-bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName)
+bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName, std::list<LogData>& logger)
 {
 
   // time tracking example
@@ -73,21 +75,80 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName)
   float seconds = timeDelta(start, end);
 
   // logging example
-  logger(LogData(conf.testName,nodeName,proc,98765,seconds,"demonstration"));
+  logger.push_back(LogData(conf.testName,nodeName,proc,98765,seconds,"demonstration"));
 
   // function returns true on success
   return true;
 }
 
+bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
+{
+  if (proc != 0)
+  {
+    // child node.  send logs
+    int numLogs = logger.size();
+    char name[MAX_STRING_LENGTH] = logger.begin().name.c_str();
+    char node[MAX_STRING_LENGTH] = logger.begin().node.c_str();
+    unsigned me = logger.begin().me;
+    unsigned you = logger.begin().you;
+    double time [numLogs];
+    int i = 0;
+    for (std::list<LogData>::iterator iter = logger.begin(); iter != logger.end(); ++iter)
+    {
+      time[i] = iter->t;
+      ++i;
+    }
+    char messages[numLogs][MAX_STRING_LENGTH];
+    i = 0;
+    for (std::list<LogData>::iterator iter = logger.begin(); iter != logger.end(); ++iter)
+    {
+      messages[i] = i->msg.c_str();
+      ++i;
+    }
 
+    MPI_Send(&numLogs, 1, MPI_INT, 0, 1, MPI_COMM_WORLD);
+    MPI_Send(&name, MAX_STRING_LENGTH, MPI_CHAR, 0, 2, MPI_COMM_WORLD);
+    MPI_Send(&node, MAX_STRING_LENGTH, MPI_CHAR, 0, 3, MPI_COMM_WORLD);
+    MPI_Send(&me, 1, MPI_UNSIGNED, 0, 4, MPI_COMM_WORLD);
+    MPI_Send(&you, 1, MPI_UNSIGNED, 0, 5, MPI_COMM_WORLD);
+    MPI_Send(&time, numLogs, MPI_DOUBLE, 0, 6, MPI_COMM_WORLD);
+    MPI_Send(&messages, numLogs * MAX_STRING_LENGTH, MPI_CHAR, 0, 7, MPI_COMM_WORLD);
+  } else {
+    // master node.  receive logs
+    for (int p = 1; p < numProcs; ++i)
+    {
+      int numLogs;
+      char name[MAX_STRING_LENGTH];
+      char node[MAX_STRING_LENGTH];
+      unsigned me;
+      unsigned you;
+      double time [numLogs];
+      char messages[numLogs][MAX_STRING_LENGTH];
 
+      MPI_Recv(&numLogs, 1, MPI_INT, p, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(&name, MAX_STRING_LENGTH, MPI_CHAR, p, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(&node, MAX_STRING_LENGTH, MPI_CHAR, p, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(&me, 1, MPI_UNSIGNED, p, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(&you, 1, MPI_UNSIGNED, p, 5, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(&time, numLogs, MPI_DOUBLE, p, 6, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(&messages, numLogs * MAX_STRING_LENGTH, MPI_CHAR, p, 7, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
+      for (int i = 0; i < numLogs; ++i)
+      {
+        logger.push_back(LogData(name, node, me, you, time[i], messages[i]));
+      }      
+    }
+  }
 
+  return true;
+}
 
 int main (int argc, char** argv)
 {
   TestConfig conf;
   
+  std::list<LogData> log;
+
   MPI_Init(NULL, NULL);
 
   // Get the number of processes
@@ -107,12 +168,13 @@ int main (int argc, char** argv)
   if (!parseArgs(argc, argv, conf))
     std::cout << "usage: <testName> <# iterations> <# messages>\n";
   else 
-    if (!runTest(conf, world_rank, world_size, nodeName)) {
+    if (!runTest(conf, world_rank, world_size, nodeName, log)) {
       MPI_Finalize();
       return EXIT_FAILURE;
     }
     else
     {
+      handleLogs(world_rank, world_size, log);
       MPI_Finalize();
       return EXIT_SUCCESS;
     }
@@ -133,7 +195,7 @@ float timeDelta(timeval start, timeval end)
 
 void logger(LogData l)
 {
-  printf("%s,%s,%i,%i,%f,%s\n",l.testName,l.thisNode,l.thisID,l.thatID,l.timeDelta,l.message);
+  printf("%s,%s,%i,%i,%f,%s\n",l.testName.c_str(),l.thisNode.c_str(),l.thisID,l.thatID,l.timeDelta,l.message.c_str());
   // std::cout << l.testName << "," 
   //           << l.thisNode << "," 
   //           << l.thisID << ","
