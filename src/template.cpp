@@ -111,13 +111,21 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
       ++i;
     }
 
+    printf("process %i send numLogs",proc);
     MPI_Send(&numLogs, 1, MPI_INT, 0, 1, MPI_COMM_WORLD);
+    printf("process %i send name",proc);
     MPI_Send(&name, MAX_STRING_LENGTH, MPI_CHAR, 0, 2, MPI_COMM_WORLD);
+    printf("process %i send node",proc);
     MPI_Send(&node, MAX_STRING_LENGTH, MPI_CHAR, 0, 3, MPI_COMM_WORLD);
+    printf("process %i send me",proc);
     MPI_Send(&me, 1, MPI_UNSIGNED, 0, 4, MPI_COMM_WORLD);
+    printf("process %i send you",proc);
     MPI_Send(&you, 1, MPI_UNSIGNED, 0, 5, MPI_COMM_WORLD);
+    printf("process %i send time",proc);
     MPI_Send(&time, numLogs, MPI_DOUBLE, 0, 6, MPI_COMM_WORLD);
+    printf("process %i send messages",proc);
     MPI_Send(&messages, numLogs * MAX_STRING_LENGTH, MPI_CHAR, 0, 7, MPI_COMM_WORLD);
+    printf("process %i done sending",proc);
   } else {
     // master node.  receive logs
     for (int p = 1; p < numProcs; ++p)
@@ -129,19 +137,27 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
       unsigned you;
       double time [numLogs];
       char messages[numLogs][MAX_STRING_LENGTH];
-
+      printf("master, about to receive, has %i logs",logger.size());
+      printf("master, from process %i, receive numLogs",p);
       MPI_Recv(&numLogs, 1, MPI_INT, p, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      printf("master, from process %i, receive name",p);
       MPI_Recv(&name, MAX_STRING_LENGTH, MPI_CHAR, p, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      printf("master, from process %i, receive node",p);
       MPI_Recv(&node, MAX_STRING_LENGTH, MPI_CHAR, p, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      printf("master, from process %i, receive me",p);
       MPI_Recv(&me, 1, MPI_UNSIGNED, p, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      printf("master, from process %i, receive you",p);
       MPI_Recv(&you, 1, MPI_UNSIGNED, p, 5, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      printf("master, from process %i, receive time",p);
       MPI_Recv(&time, numLogs, MPI_DOUBLE, p, 6, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      printf("master, from process %i, receive messages",p);
       MPI_Recv(&messages, numLogs * MAX_STRING_LENGTH, MPI_CHAR, p, 7, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
+      printf("master, from process %i, done receiving",p);
       for (int i = 0; i < numLogs; ++i)
       {
         logger.push_back(LogData(name, node, me, you, time[i], messages[i]));
       }      
+      printf("master, done receiving, has %i logs",logger.size());
     }
   }
 
