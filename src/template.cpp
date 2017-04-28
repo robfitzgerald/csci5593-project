@@ -90,8 +90,10 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
     //   unsigned thisID, thatID;
     //   double timeDelta;
     int numLogs = logger.size();
-    char name[MAX_STRING_LENGTH] = { logger.begin()->testName.c_str() };
-    char node[MAX_STRING_LENGTH] = { logger.begin()->thisNode.c_str() };
+    char name[MAX_STRING_LENGTH];
+    strcpy(name, logger.begin()->testName.c_str());
+    char node[MAX_STRING_LENGTH];
+    strcpy(node, logger.begin()->thisNode.c_str());
     unsigned me = logger.begin()->thisID;
     unsigned you = logger.begin()->thatID;
     double time [numLogs];
