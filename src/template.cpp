@@ -86,11 +86,14 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
   if (proc != 0)
   {
     // child node.  send logs
+    //   std::string testName, thisNode, message;
+    //   unsigned thisID, thatID;
+    //   double timeDelta;
     int numLogs = logger.size();
-    char name[MAX_STRING_LENGTH] = logger.begin()->name.c_str();
-    char node[MAX_STRING_LENGTH] = logger.begin()->node.c_str();
-    unsigned me = logger.begin()->me;
-    unsigned you = logger.begin()->you;
+    char name[MAX_STRING_LENGTH] = logger.begin()->testName.c_str();
+    char node[MAX_STRING_LENGTH] = logger.begin()->thisNode.c_str();
+    unsigned me = logger.begin()->thisID;
+    unsigned you = logger.begin()->thatID;
     double time [numLogs];
     int i = 0;
     for (std::list<LogData>::iterator iter = logger.begin(); iter != logger.end(); ++iter)
@@ -102,7 +105,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
     i = 0;
     for (std::list<LogData>::iterator iter = logger.begin(); iter != logger.end(); ++iter)
     {
-      strcpy(messages[i], iter->msg.c_str());
+      strcpy(messages[i], iter->message.c_str());
       ++i;
     }
 
