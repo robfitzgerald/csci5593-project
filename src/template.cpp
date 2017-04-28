@@ -137,27 +137,27 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
       unsigned you;
       double time [numLogs];
       char messages[numLogs][MAX_STRING_LENGTH];
-      // printf("master, about to receive, has %i logs",logger.size());
-      // printf("master, from process %i, receive numLogs",p);
+      printf("master, about to receive from %i, has %i logs\n",p,logger.size());
+      // printf("master, from process %i, receive numLogs\n",p);
       MPI_Recv(&numLogs, 1, MPI_INT, p, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      // printf("master, from process %i, receive name",p);
+      // printf("master, from process %i, receive name\n",p);
       MPI_Recv(&name, MAX_STRING_LENGTH, MPI_CHAR, p, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      // printf("master, from process %i, receive node",p);
+      // printf("master, from process %i, receive node\n",p);
       MPI_Recv(&node, MAX_STRING_LENGTH, MPI_CHAR, p, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      // printf("master, from process %i, receive me",p);
+      // printf("master, from process %i, receive me\n",p);
       MPI_Recv(&me, 1, MPI_UNSIGNED, p, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      // printf("master, from process %i, receive you",p);
+      // printf("master, from process %i, receive you\n",p);
       MPI_Recv(&you, 1, MPI_UNSIGNED, p, 5, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      // printf("master, from process %i, receive time",p);
+      // printf("master, from process %i, receive time\n",p);
       MPI_Recv(&time, numLogs, MPI_DOUBLE, p, 6, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      // printf("master, from process %i, receive messages",p);
+      // printf("master, from process %i, receive messages\n",p);
       MPI_Recv(&messages, numLogs * MAX_STRING_LENGTH, MPI_CHAR, p, 7, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      // printf("master, from process %i, done receiving",p);
+      // printf("master, from process %i, done receiving\n",p);
       for (int i = 0; i < numLogs; ++i)
       {
         logger.push_back(LogData(name, node, me, you, time[i], messages[i]));
       }      
-      // printf("master, done receiving, has %i logs",logger.size());
+      printf("master, done receiving from %i, has %i logs\n",p,logger.size());
     }
   }
 
