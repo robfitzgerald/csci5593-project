@@ -114,7 +114,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
     }
 
     printf("process %i send numLogs\n",proc);
-    MPI_Send(&numLogs, 1, MPI_INT, 0, 1, MPI_COMM_WORLD);
+    MPI_Send(&numLogs * sizeof(char), 1, MPI_INT, 0, 1, MPI_COMM_WORLD);
     printf("process %i send name\n",proc);
     MPI_Send(&name, MAX_STRING_LENGTH, MPI_CHAR, 0, 2, MPI_COMM_WORLD);
     printf("process %i send node\n",proc);
@@ -124,9 +124,9 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
     printf("process %i send you\n",proc);
     MPI_Send(&you, 1, MPI_UNSIGNED, 0, 5, MPI_COMM_WORLD);
     printf("process %i send time\n",proc);
-    MPI_Send(&time, numLogs, MPI_DOUBLE, 0, 6, MPI_COMM_WORLD);
+    MPI_Send(&time, numLogs * sizeof(double), MPI_DOUBLE, 0, 6, MPI_COMM_WORLD);
     printf("process %i send messages\n",proc);
-    MPI_Send(&messages, numLogs * MAX_STRING_LENGTH, MPI_CHAR, 0, 7, MPI_COMM_WORLD);
+    MPI_Send(&messages, numLogs * sizeof(char) * MAX_STRING_LENGTH, MPI_CHAR, 0, 7, MPI_COMM_WORLD);
     printf("process %i done sending\n",proc);
 
     free (time);
