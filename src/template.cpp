@@ -96,7 +96,9 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
     strcpy(node, logger.begin()->thisNode.c_str());
     unsigned me = logger.begin()->thisID;
     unsigned you = logger.begin()->thatID;
-    double time [numLogs];
+    // double time [numLogs];
+    double *time = (double *) malloc( numLogs * sizeof( double ) );
+
     int i = 0;
     for (std::list<LogData>::iterator iter = logger.begin(); iter != logger.end(); ++iter)
     {
@@ -126,6 +128,8 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
     printf("process %i send messages\n",proc);
     MPI_Send(&messages, numLogs * MAX_STRING_LENGTH, MPI_CHAR, 0, 7, MPI_COMM_WORLD);
     printf("process %i done sending\n",proc);
+
+    free (time);
   } else {
     // master node.  receive logs
     for (int p = 1; p < numProcs; ++p)
@@ -179,7 +183,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
             iter->thisID,
             iter->thatID,
             iter->timeDelta,
-            iter->message.c_str())
+            iter->message.c_str());
           ++i;
         }
       }
