@@ -139,7 +139,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
       char node[MAX_STRING_LENGTH];
       unsigned me;
       unsigned you;
-      double time [numLogs];
+      double *time = (double *) malloc( numLogs * sizeof( double ) );
       char messages[numLogs][MAX_STRING_LENGTH];
       printf("master, about to receive from %i, has %i logs\n",p,logger.size());
       // printf("master, from process %i, receive numLogs\n",p);
@@ -172,6 +172,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
       // double time [numLogs];
 
       printf("master, done receiving from %i, has %i logs\n",p,logger.size());
+      free (time);
       {
         int i = 0;
         for (std::list<LogData>::iterator iter = logger.begin(); iter != logger.end(); ++iter)
