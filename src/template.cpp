@@ -155,9 +155,34 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
       // printf("master, from process %i, done receiving\n",p);
       for (int i = 0; i < numLogs; ++i)
       {
+
         logger.push_back(LogData(name, node, me, you, time[i], messages[i]));
       }      
+
+      // char name[MAX_STRING_LENGTH];
+      // strcpy(name, logger.begin()->testName.c_str());
+      // char node[MAX_STRING_LENGTH];
+      // strcpy(node, logger.begin()->thisNode.c_str());
+      // unsigned me = logger.begin()->thisID;
+      // unsigned you = logger.begin()->thatID;
+      // double time [numLogs];
+
       printf("master, done receiving from %i, has %i logs\n",p,logger.size());
+      {
+        int i = 0;
+        for (std::list<LogData>::iterator iter = logger.begin(); iter != logger.end(); ++iter)
+        {
+          printf("master log %i: %s %s %i %i %f %s", 
+            i, 
+            iter->testName.c_str(), 
+            iter->thisNode.c_str(),
+            iter->thisID,
+            iter->thatID,
+            iter->timeDelta,
+            iter->message.c_str())
+          ++i;
+        }
+      }
     }
   }
 
