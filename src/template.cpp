@@ -24,7 +24,7 @@ struct LogData
     thatID(you),
     timeDelta(t),
     testName(name),
-    testNode(node),
+    thisNode(node),
     message(msg) 
     {}
   std::string testName, thisNode, message;
@@ -181,7 +181,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
         int i = 0;
         for (std::list<LogData>::iterator iter = logger.begin(); iter != logger.end(); ++iter)
         {
-          printf("log %i exists.")
+          printf("log %i exists.", i);
           // printf("master log %i: %s %s %i %i %f %s", 
           //   i, 
           //   iter->testName.c_str(), 
@@ -190,7 +190,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
           //   iter->thatID,
           //   iter->timeDelta,
           //   iter->message.c_str());
-          // ++i;
+          ++i;
         }
       }
     }
