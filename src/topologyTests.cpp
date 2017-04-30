@@ -350,7 +350,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
     {
       time[i] = iter->timeDelta;
       yous[i] = iter->thatID;
-      strcpy(messages + (i * MAX_STRING_LENGTH), iter->message.substr(0,MAX_STRING_LENGTH).c_str());
+      // strcpy(messages + (i * MAX_STRING_LENGTH), iter->message.substr(0,MAX_STRING_LENGTH).c_str());
       ++i;
     }
 
@@ -368,11 +368,13 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
     MPI_Send(&time, numLogs * sizeof(float), MPI_FLOAT, 0, 6, MPI_COMM_WORLD);
     printf("~~~~~ sending messages\n");
    
-    for (i = 0; i < numLogs; ++i)
+    i = 0;
+    for (std::list<LogData>::iterator iter = log.begin(); iter != log.end(); ++iter)
     {
       char msg [MAX_STRING_LENGTH];
       strcpy(msg, iter->message.substr(0,MAX_STRING_LENGTH).c_str());
       MPI_Send(&msg, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, 0, 7, MPI_COMM_WORLD);
+      ++i;
     } 
 
     // printf("messages: \n\n");
@@ -463,7 +465,7 @@ int main (int argc, char** argv)
   int name_len;
   MPI_Get_processor_name(processor_name, &name_len);
   std::string nodeName = processor_name;
-  printf("proc %i on node %s\n", world_rank, nodeName);
+  printf("proc %i on node %s\n", world_rank, nodeName.c_str());
 
   if (!parseArgs(argc, argv, conf)) {
     std::cout << "usage: <testName (ring/complete/star/average_time)> <# iterations> <# messages> <(opt) star center process>\n";
