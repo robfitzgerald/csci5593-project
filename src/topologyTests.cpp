@@ -354,6 +354,13 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
       ++i;
     }
 
+    printf("timeDeltas: \n");
+    for (i = 0; i < numLogs; ++i)
+    {
+      printf("%f, ",time[i]);
+    }
+    printf("\n");
+
     MPI_Send(&numLogs, 1, MPI_INT, 0, 1, MPI_COMM_WORLD);
     MPI_Send(&name, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, 0, 2, MPI_COMM_WORLD);
     MPI_Send(&node, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, 0, 3, MPI_COMM_WORLD);
