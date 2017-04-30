@@ -16,6 +16,7 @@
 
 struct timeval start, end;
 const int DEFAULT_TAG = 0;
+const int MAX_STRING_LENGTH = 50;
 
 /**
  * object used to call the logging service
