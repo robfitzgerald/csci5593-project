@@ -22,7 +22,7 @@ const int MAX_STRING_LENGTH = 50;
  */
 struct LogData
 {
-  LogData (std::string name, std::string node, unsigned me, unsigned you, double t, std::string msg = ""):
+  LogData (std::string name, std::string node, unsigned me, unsigned you, float t, std::string msg = ""):
     testName(name),
     thisNode(node),
     thisID(me),
@@ -31,7 +31,7 @@ struct LogData
     message(msg) {}
   std::string testName, thisNode, message;
   unsigned thisID, thatID;
-  double timeDelta;
+  float timeDelta;
 };
 
 /**
@@ -341,8 +341,9 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
     unsigned me = log.begin()->thisID;
     unsigned yous [numLogs];
     float time [numLogs];
-    char messages[numLogs][MAX_STRING_LENGTH];
-
+    // char messages[numLogs][MAX_STRING_LENGTH];
+    char* messages = (char*) malloc( numLogs * sizeof(char) * MAX_STRING_LENGTH);
+    
     int i = 0;
     for (std::list<LogData>::iterator iter = log.begin(); iter != log.end(); ++iter)
     {
@@ -360,6 +361,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
     MPI_Send(&time, numLogs * sizeof(float), MPI_FLOAT, 0, 6, MPI_COMM_WORLD);
     MPI_Send(&messages, numLogs * MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, 0, 7, MPI_COMM_WORLD);
 
+    free(messages);
   } else {
     // master node.  receive logs from each process
     for (int p = 1; p < numProcs; ++p)
@@ -371,7 +373,8 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
       
       MPI_Recv(&numLogs, 1, MPI_INT, p, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-      char messages[numLogs][MAX_STRING_LENGTH];
+      // char messages[numLogs][MAX_STRING_LENGTH];
+      char* messages = (char*) malloc( numLogs * sizeof(char) * MAX_STRING_LENGTH);
       float time [numLogs];
       unsigned yous[numLogs];
 
@@ -388,7 +391,8 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
         strcpy(logMsg, messages[i]);  
         unsigned you = yous[i];
         log.push_back(LogData(name, node, me, you, logTime, logMsg));
-      }      
+      }   
+      free(messages);   
     }
     for (std::list<LogData>::iterator iter = log.begin(); iter != log.end(); ++iter)
     {
