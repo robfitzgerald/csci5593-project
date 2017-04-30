@@ -52,7 +52,7 @@ float timeDelta(timeval, timeval);
  * @param  conf : configuration called from command line
  * @return true on success
  */
-bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName, std::list<LogData>& logger)
+bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName, std::list<LogData>& log)
 {
 
   // time tracking example
@@ -76,124 +76,82 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName, std:
   float seconds = timeDelta(start, end);
 
   // logging example
-  logger.push_back(LogData(conf.testName,nodeName,proc,98765,seconds,"demonstration"));
+  log.push_back(LogData(conf.testName,nodeName,proc,98765,seconds,"demonstration"));
 
   // function returns true on success
   return true;
 }
 
-bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
+bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
 {
   if (proc != 0)
   {
-    // child node.  send logs
-    //   std::string testName, thisNode, message;
-    //   unsigned thisID, thatID;
-    //   float timeDelta;
-    int numLogs = logger.size();
+    // child node. re-package all log data and send to master node.
+    int numLogs = log.size();
     char name[MAX_STRING_LENGTH];
-    strcpy(name, logger.begin()->testName.c_str());
+    strcpy(name, log.begin()->testName.c_str());
     char node[MAX_STRING_LENGTH];
-    strcpy(node, logger.begin()->thisNode.c_str());
-    unsigned me = logger.begin()->thisID;
-    unsigned you = logger.begin()->thatID;
+    strcpy(node, log.begin()->thisNode.c_str());
+    unsigned me = log.begin()->thisID;
+    unsigned you = log.begin()->thatID;
     float time [numLogs];
-    // float *time = (float *) malloc( numLogs * sizeof( float ) );
 
     int i = 0;
-    for (std::list<LogData>::iterator iter = logger.begin(); iter != logger.end(); ++iter)
+    for (std::list<LogData>::iterator iter = log.begin(); iter != log.end(); ++iter)
     {
       time[i] = iter->timeDelta;
       ++i;
     }
     char messages[numLogs][MAX_STRING_LENGTH];
     i = 0;
-    for (std::list<LogData>::iterator iter = logger.begin(); iter != logger.end(); ++iter)
+    for (std::list<LogData>::iterator iter = log.begin(); iter != log.end(); ++iter)
     {
       strcpy(messages[i], iter->message.c_str());
       ++i;
     }
 
-    // printf("process %i send numLogs\n",proc);
     MPI_Send(&numLogs, 1, MPI_INT, 0, 1, MPI_COMM_WORLD);
-    // printf("process %i send name\n",proc);
     MPI_Send(&name, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, 0, 2, MPI_COMM_WORLD);
-    // printf("process %i send node\n",proc);
     MPI_Send(&node, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, 0, 3, MPI_COMM_WORLD);
-    // printf("process %i send me\n",proc);
     MPI_Send(&me, 1, MPI_UNSIGNED, 0, 4, MPI_COMM_WORLD);
-    // printf("process %i send you\n",proc);
     MPI_Send(&you, 1, MPI_UNSIGNED, 0, 5, MPI_COMM_WORLD);
-    // printf("process %i send time\n",proc);
     MPI_Send(&time, numLogs * sizeof(float), MPI_FLOAT, 0, 6, MPI_COMM_WORLD);
-    // printf("process %i send messages\n",proc);
     MPI_Send(&messages, numLogs * MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, 0, 7, MPI_COMM_WORLD);
-    // printf("process %i done sending\n",proc);
 
   } else {
-    // master node.  receive logs
+    // master node.  receive logs from each process
     for (int p = 1; p < numProcs; ++p)
     {
-      // printf("master, about to begin receiving from proc %i, currently has %i logs\n",p,logger.size());
       int numLogs;
       char name[MAX_STRING_LENGTH];
       char node[MAX_STRING_LENGTH];
       unsigned me;
       unsigned you;
       
-      // printf("master, from process %i, receive numLogs\n",p);
       MPI_Recv(&numLogs, 1, MPI_INT, p, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
       char messages[numLogs][MAX_STRING_LENGTH];
       float time [numLogs];
 
-      // printf("master, from process %i, receive name\n",p);
       MPI_Recv(&name, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      // printf("master, from process %i, receive node\n",p);
       MPI_Recv(&node, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      // printf("master, from process %i, receive me\n",p);
       MPI_Recv(&me, 1, MPI_UNSIGNED, p, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      // printf("master, from process %i, receive you\n",p);
       MPI_Recv(&you, 1, MPI_UNSIGNED, p, 5, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      // printf("master, from process %i, receive time\n",p);
       MPI_Recv(&time, numLogs * sizeof(float), MPI_FLOAT, p, 6, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      // printf("master, from process %i, receive messages\n",p);
       MPI_Recv(&messages, numLogs * MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 7, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      // printf("master, from process %i, done receiving\n",p);
       for (int i = 0; i < numLogs; ++i)
       {
-        // printf("capturing timeDelta from process %i log #%i\n", p, i);
         float logTime = time[i];
-        // printf("value %f from process %i log #%i\n", logTime, p, i);
-        // printf("capturing message from process %i log #%i\n", p, i);
         char logMsg [MAX_STRING_LENGTH];
         strcpy(logMsg, messages[i]);  
-        // printf("value %s from process %i log #%i\n", logMsg, p, i);
-        // printf("adding log to list<LogData> from process %i log #%i\n", p, i);
-        logger.push_back(LogData(name, node, me, you, logTime, logMsg));
-
+        log.push_back(LogData(name, node, me, you, logTime, logMsg));
       }      
-
-      printf("master, done receiving from %i, now has %i logs\n",p,logger.size());
-      {
-        int i = 0;
-        for (std::list<LogData>::iterator iter = logger.begin(); iter != logger.end(); ++iter)
-        {
-          printf("log %i exists.", i);
-          printf("master log %i: %s %s %i %i %f %s", 
-            i, 
-            iter->testName.c_str(), 
-            iter->thisNode.c_str(),
-            iter->thisID,
-            iter->thatID,
-            iter->timeDelta,
-            iter->message.c_str());
-          ++i;
-        }
-      }
+    }
+    for (std::list<LogData>::iterator iter = log.begin(); iter != log.end(); ++iter)
+    {
+      logger((*iter));
     }
   }
-
   return true;
 }
 
