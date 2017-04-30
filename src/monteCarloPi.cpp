@@ -257,7 +257,7 @@ void logger(LogData l)
             << l.thisID << ","
             << l.thatID << ","
             << l.timeDelta << ","
-            << l.message <<"\n";
+            << l.message << std::endl;
 }
 
 
