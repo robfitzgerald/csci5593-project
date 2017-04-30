@@ -354,12 +354,12 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
       ++i;
     }
 
-    printf("timeDeltas: \n");
-    for (i = 0; i < numLogs; ++i)
-    {
-      printf("%f, ",time[i]);
-    }
-    printf("\n");
+    // printf("timeDeltas: \n");
+    // for (i = 0; i < numLogs; ++i)
+    // {
+    //   printf("%f, ",time[i]);
+    // }
+    // printf("\n");
 
     MPI_Send(&numLogs, 1, MPI_INT, 0, 1, MPI_COMM_WORLD);
     MPI_Send(&name, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, 0, 2, MPI_COMM_WORLD);
@@ -375,7 +375,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
     // master node.  receive logs from each process
     for (int p = 1; p < numProcs; ++p)
     {
-      printf("~~~ master");
+      printf("~~~ master on proc %i", proc);
       int numLogs;
       char name[MAX_STRING_LENGTH];
       char node[MAX_STRING_LENGTH];
@@ -445,6 +445,7 @@ int main (int argc, char** argv)
   int name_len;
   MPI_Get_processor_name(processor_name, &name_len);
   std::string nodeName = processor_name;
+  printf("proc %i on node %s\n", world_rank, nodeName);
 
   if (!parseArgs(argc, argv, conf)) {
     std::cout << "usage: <testName (ring/complete/star/average_time)> <# iterations> <# messages> <(opt) star center process>\n";
