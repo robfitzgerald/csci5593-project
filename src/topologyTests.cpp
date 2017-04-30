@@ -340,7 +340,8 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
     strcpy(node, log.begin()->thisNode.c_str());
     unsigned me = log.begin()->thisID;
     unsigned yous [numLogs];
-    float time [numLogs];
+    // float time [numLogs];
+    float* time = (float*) malloc (numLogs * sizeof(float));
     // char messages[numLogs][MAX_STRING_LENGTH];
     char* messages = (char*) malloc( numLogs * sizeof(char) * MAX_STRING_LENGTH);
     
@@ -362,6 +363,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
     MPI_Send(&messages, numLogs * MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, 0, 7, MPI_COMM_WORLD);
 
     free(messages);
+    free(time);
   } else {
     // master node.  receive logs from each process
     for (int p = 1; p < numProcs; ++p)
@@ -376,22 +378,23 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
 
       // char messages[numLogs][MAX_STRING_LENGTH];
       char* messages = (char*) malloc( numLogs * sizeof(char) * MAX_STRING_LENGTH);
-      float time [numLogs];
+      // float time [numLogs];
+      float* time = (float*) malloc (numLogs * sizeof(float));
       unsigned yous[numLogs];
 
-      printf("~~~~~ post-setup, receiving logs from proc %i", p);
+      printf("~~~~~ post-setup, receiving logs from proc %i\n", p);
       MPI_Recv(&name, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      printf("~~~~~ received name");
+      printf("~~~~~ received name\n");
       MPI_Recv(&node, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      printf("~~~~~ received node");
+      printf("~~~~~ received node\n");
       MPI_Recv(&me, 1, MPI_UNSIGNED, p, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      printf("~~~~~ received me");
+      printf("~~~~~ received me\n");
       MPI_Recv(&yous, numLogs, MPI_UNSIGNED, p, 5, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      printf("~~~~~ received yous");
+      printf("~~~~~ received yous\n");
       MPI_Recv(&time, numLogs * sizeof(float), MPI_FLOAT, p, 6, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      printf("~~~~~ received time");
+      printf("~~~~~ received time\n");
       MPI_Recv(&messages, numLogs * MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 7, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      printf("~~~~~ received messages");
+      printf("~~~~~ received messages\n");
       printf("master received %i logs from process %i", numLogs, p);
 
       for (int i = 0; i < numLogs; ++i)
@@ -403,7 +406,8 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
         unsigned you = yous[i];
         log.push_back(LogData(name, node, me, you, logTime, logMsg));
       }   
-      free(messages);   
+      free(messages); 
+      free(time);  
     }
     for (std::list<LogData>::iterator iter = log.begin(); iter != log.end(); ++iter)
     {
