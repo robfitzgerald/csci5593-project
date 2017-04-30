@@ -19,7 +19,7 @@ const int MAX_STRING_LENGTH = 50;
  */
 struct LogData
 {
-  LogData (std::string name, std::string node, unsigned me, unsigned you, double t, std::string msg = ""):
+  LogData (std::string name, std::string node, unsigned me, unsigned you, float t, std::string msg = ""):
     testName(name),
     thisNode(node),
     thisID(me),
@@ -28,7 +28,7 @@ struct LogData
     message(msg) {}
   std::string testName, thisNode, message;
   unsigned thisID, thatID;
-  double timeDelta;
+  float timeDelta;
 };
 
 /**
@@ -88,7 +88,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
     // child node.  send logs
     //   std::string testName, thisNode, message;
     //   unsigned thisID, thatID;
-    //   double timeDelta;
+    //   float timeDelta;
     int numLogs = logger.size();
     char name[MAX_STRING_LENGTH];
     strcpy(name, logger.begin()->testName.c_str());
@@ -96,8 +96,8 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
     strcpy(node, logger.begin()->thisNode.c_str());
     unsigned me = logger.begin()->thisID;
     unsigned you = logger.begin()->thatID;
-    // double time [numLogs];
-    double *time = (double *) malloc( numLogs * sizeof( double ) );
+    float time [numLogs];
+    // float *time = (float *) malloc( numLogs * sizeof( float ) );
 
     int i = 0;
     for (std::list<LogData>::iterator iter = logger.begin(); iter != logger.end(); ++iter)
@@ -124,7 +124,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
     printf("process %i send you\n",proc);
     MPI_Send(&you, 1, MPI_UNSIGNED, 0, 5, MPI_COMM_WORLD);
     printf("process %i send time\n",proc);
-    MPI_Send(&time, numLogs * sizeof(double), MPI_DOUBLE, 0, 6, MPI_COMM_WORLD);
+    MPI_Send(&time, numLogs * sizeof(float), MPI_FLOAT, 0, 6, MPI_COMM_WORLD);
     printf("process %i send messages\n",proc);
     MPI_Send(&messages, numLogs * MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, 0, 7, MPI_COMM_WORLD);
     printf("process %i done sending\n",proc);
@@ -139,11 +139,13 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
       char node[MAX_STRING_LENGTH];
       unsigned me;
       unsigned you;
-      double *time = (double *) malloc( numLogs * sizeof( double ) );
       char messages[numLogs][MAX_STRING_LENGTH];
       printf("master, about to receive from %i, has %i logs\n",p,logger.size());
       // printf("master, from process %i, receive numLogs\n",p);
       MPI_Recv(&numLogs, 1, MPI_INT, p, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+      float *time = (float *) malloc( numLogs * sizeof( float ) );
+
       // printf("master, from process %i, receive name\n",p);
       MPI_Recv(&name, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       // printf("master, from process %i, receive node\n",p);
@@ -153,7 +155,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
       // printf("master, from process %i, receive you\n",p);
       MPI_Recv(&you, 1, MPI_UNSIGNED, p, 5, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       // printf("master, from process %i, receive time\n",p);
-      MPI_Recv(&time, numLogs * sizeof(double), MPI_DOUBLE, p, 6, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(&time, numLogs * sizeof(float), MPI_FLOAT, p, 6, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       // printf("master, from process %i, receive messages\n",p);
       MPI_Recv(&messages, numLogs * MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 7, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       // printf("master, from process %i, done receiving\n",p);
