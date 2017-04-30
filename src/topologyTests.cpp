@@ -45,11 +45,11 @@ struct TestConfig
 };
 
 bool parseArgs(int, char**, TestConfig&);
-bool ring(TestConfig, int, int, std::string);
-bool traffic(TestConfig, int, int, std::string);
-bool complete(TestConfig, int, int, std::string);
-bool star(TestConfig, int, int, int, std::string);
-bool averagetime(TestConfig, int, int, int, std::string);
+bool ring(TestConfig, int, int, std::string, std::list<LogData>&);
+bool traffic(TestConfig, int, int, std::string, std::list<LogData>&);
+bool complete(TestConfig, int, int, std::string, std::list<LogData>&);
+bool star(TestConfig, int, int, int, std::string, std::list<LogData>&);
+bool averagetime(TestConfig, int, int, int, std::string, std::list<LogData>&);
 bool handleLogs(int, int, std::list<LogData>&);
 void logger(LogData);
 void storeTime(timeval&);
