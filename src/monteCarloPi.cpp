@@ -137,19 +137,15 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
     char node[MAX_STRING_LENGTH];
     strcpy(node, log.begin()->thisNode.c_str());
     unsigned me = log.begin()->thisID;
-    unsigned you = log.begin()->thatID;
+    unsigned yous [numLogs];
     float time [numLogs];
+    char messages[numLogs][MAX_STRING_LENGTH];
 
     int i = 0;
     for (std::list<LogData>::iterator iter = log.begin(); iter != log.end(); ++iter)
     {
       time[i] = iter->timeDelta;
-      ++i;
-    }
-    char messages[numLogs][MAX_STRING_LENGTH];
-    i = 0;
-    for (std::list<LogData>::iterator iter = log.begin(); iter != log.end(); ++iter)
-    {
+      yous[i] = iter->thatID;
       strcpy(messages[i], iter->message.c_str());
       ++i;
     }
@@ -158,7 +154,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
     MPI_Send(&name, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, 0, 2, MPI_COMM_WORLD);
     MPI_Send(&node, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, 0, 3, MPI_COMM_WORLD);
     MPI_Send(&me, 1, MPI_UNSIGNED, 0, 4, MPI_COMM_WORLD);
-    MPI_Send(&you, 1, MPI_UNSIGNED, 0, 5, MPI_COMM_WORLD);
+    MPI_Send(&yous, numLogs, MPI_UNSIGNED, 0, 5, MPI_COMM_WORLD);
     MPI_Send(&time, numLogs * sizeof(float), MPI_FLOAT, 0, 6, MPI_COMM_WORLD);
     MPI_Send(&messages, numLogs * MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, 0, 7, MPI_COMM_WORLD);
 
@@ -170,17 +166,17 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
       char name[MAX_STRING_LENGTH];
       char node[MAX_STRING_LENGTH];
       unsigned me;
-      unsigned you;
       
       MPI_Recv(&numLogs, 1, MPI_INT, p, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
       char messages[numLogs][MAX_STRING_LENGTH];
       float time [numLogs];
+      unsigned yous[numLogs];
 
       MPI_Recv(&name, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       MPI_Recv(&node, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       MPI_Recv(&me, 1, MPI_UNSIGNED, p, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      MPI_Recv(&you, 1, MPI_UNSIGNED, p, 5, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(&yous, numLogs, MPI_UNSIGNED, p, 5, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       MPI_Recv(&time, numLogs * sizeof(float), MPI_FLOAT, p, 6, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       MPI_Recv(&messages, numLogs * MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 7, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       for (int i = 0; i < numLogs; ++i)
@@ -188,6 +184,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
         float logTime = time[i];
         char logMsg [MAX_STRING_LENGTH];
         strcpy(logMsg, messages[i]);  
+        unsigned you = yous[i];
         log.push_back(LogData(name, node, me, you, logTime, logMsg));
       }      
     }
@@ -198,6 +195,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
   }
   return true;
 }
+
 
 
 
