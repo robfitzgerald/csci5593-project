@@ -379,13 +379,19 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
       float time [numLogs];
       unsigned yous[numLogs];
 
+      printf("~~~~~ post-setup, receiving logs from proc %i", p);
       MPI_Recv(&name, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      printf("~~~~~ received name");
       MPI_Recv(&node, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      printf("~~~~~ received node");
       MPI_Recv(&me, 1, MPI_UNSIGNED, p, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      printf("~~~~~ received me");
       MPI_Recv(&yous, numLogs, MPI_UNSIGNED, p, 5, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      printf("~~~~~ received yous");
       MPI_Recv(&time, numLogs * sizeof(float), MPI_FLOAT, p, 6, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      printf("~~~~~ received time");
       MPI_Recv(&messages, numLogs * MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 7, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
+      printf("~~~~~ received messages");
       printf("master received %i logs from process %i", numLogs, p);
 
       for (int i = 0; i < numLogs; ++i)
