@@ -20,12 +20,14 @@ const int MAX_STRING_LENGTH = 50;
 struct LogData
 {
   LogData (std::string name, std::string node, unsigned me, unsigned you, float t, std::string msg = ""):
-    testName(name),
-    thisNode(node),
     thisID(me),
     thatID(you),
     timeDelta(t),
-    message(msg) {}
+    {
+      strcpy(testName, name);
+      strcpy(thisNode, node);
+      strcpy(message, msg);
+    }
   std::string testName, thisNode, message;
   unsigned thisID, thatID;
   float timeDelta;
@@ -163,8 +165,15 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
       printf("master, from process %i, done receiving\n",p);
       for (int i = 0; i < numLogs; ++i)
       {
+        printf("capturing timeDelta from process %i log #%i\n", p, i);
+        float logTime = time[i];
+        printf("value %f from process %i log #%i\n", logTime, p, i);
+        printf("capturing message from process %i log #%i\n", p, i);
+        char logMsg [MAX_STRING_LENGTH] = messages[i];  
+        printf("value %s from process %i log #%i\n", logMsg, p, i);
+        printf("adding log to list<LogData> from process %i log #%i\n", p, i);
+        logger.push_back(LogData(name, node, me, you, logTime, logMsg));
 
-        logger.push_back(LogData(name, node, me, you, time[i], messages[i]));
       }      
 
       printf("master, done receiving from %i, now has %i logs\n",p,logger.size());
@@ -173,15 +182,16 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& logger)
         int i = 0;
         for (std::list<LogData>::iterator iter = logger.begin(); iter != logger.end(); ++iter)
         {
-          printf("master log %i: %s %s %i %i %f %s", 
-            i, 
-            iter->testName.c_str(), 
-            iter->thisNode.c_str(),
-            iter->thisID,
-            iter->thatID,
-            iter->timeDelta,
-            iter->message.c_str());
-          ++i;
+          printf("log %i exists.")
+          // printf("master log %i: %s %s %i %i %f %s", 
+          //   i, 
+          //   iter->testName.c_str(), 
+          //   iter->thisNode.c_str(),
+          //   iter->thisID,
+          //   iter->thatID,
+          //   iter->timeDelta,
+          //   iter->message.c_str());
+          // ++i;
         }
       }
     }
