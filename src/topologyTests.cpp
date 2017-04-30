@@ -349,7 +349,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
     {
       time[i] = iter->timeDelta;
       yous[i] = iter->thatID;
-      strcpy(messages[i], iter->message.substr(0,MAX_STRING_LENGTH).c_str());
+      strcpy(messages + (i * MAX_STRING_LENGTH), iter->message.substr(0,MAX_STRING_LENGTH).c_str());
       ++i;
     }
 
@@ -366,6 +366,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
     // master node.  receive logs from each process
     for (int p = 1; p < numProcs; ++p)
     {
+      printf("~~~ master");
       int numLogs;
       char name[MAX_STRING_LENGTH];
       char node[MAX_STRING_LENGTH];
@@ -384,11 +385,15 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
       MPI_Recv(&yous, numLogs, MPI_UNSIGNED, p, 5, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       MPI_Recv(&time, numLogs * sizeof(float), MPI_FLOAT, p, 6, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       MPI_Recv(&messages, numLogs * MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 7, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+      printf("master received %i logs from process %i", numLogs, p);
+
       for (int i = 0; i < numLogs; ++i)
       {
         float logTime = time[i];
         char logMsg [MAX_STRING_LENGTH];
         strncpy(logMsg, (messages + (i * MAX_STRING_LENGTH)), MAX_STRING_LENGTH);
+        printf("~~~~~ logMsg for p:%i log:%i is %s", p, i, logMsg);
         unsigned you = yous[i];
         log.push_back(LogData(name, node, me, you, logTime, logMsg));
       }   
