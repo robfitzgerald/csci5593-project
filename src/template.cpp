@@ -23,11 +23,10 @@ struct LogData
     thisID(me),
     thatID(you),
     timeDelta(t),
-    {
-      strcpy(testName, name);
-      strcpy(thisNode, node);
-      strcpy(message, msg);
-    }
+    testName(name),
+    testNode(node),
+    message(msg) 
+    {}
   std::string testName, thisNode, message;
   unsigned thisID, thatID;
   float timeDelta;
