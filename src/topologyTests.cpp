@@ -12,8 +12,10 @@
 #include <string.h>
 #include <sstream>
 #include <sys/time.h>
+#include <list>
 
 struct timeval start, end;
+const int MAX_STRING_LENGTH = 50;
 
 /**
  * object used to call the logging service
@@ -48,6 +50,7 @@ bool traffic(TestConfig, int, int, std::string);
 bool complete(TestConfig, int, int, std::string);
 bool star(TestConfig, int, int, int, std::string);
 bool averagetime(TestConfig, int, int, int, std::string);
+bool handleLogs(int, int, std::list<LogData>&);
 void logger(LogData);
 void storeTime(timeval&);
 float timeDelta(timeval, timeval);
@@ -59,7 +62,7 @@ std::string itoa(int);
  * @param  conf : configuration called from command line
  * @return true on success
  */
-bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName){
+bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName, std::list<LogData>& log){
 
   if(proc == 0){
      printf("%s,%s,%s,%s,%s,%s\n","testName","thisNode","thisID","thatID","timeDelta","message");
@@ -69,30 +72,30 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName){
   // just demonstrating the config values we received
   if(strcmp(conf.testName.c_str(), "ring") == 0){
     for(int i = 0; i < conf.iterations; ++i ){
-      ring(conf,proc,numProcs,nodeName);
+      ring(conf,proc,numProcs,nodeName,log);
     }
   } else if(conf.testName.find("traffic") != std::string::npos){
     for(int i = 0; i < conf.iterations; ++i ){
-      traffic(conf,proc,numProcs,nodeName);
+      traffic(conf,proc,numProcs,nodeName,log);
     }
   } else if(strcmp(conf.testName.c_str(), "complete") == 0){
     for(int i = 0; i < conf.iterations; ++i ){
-      complete(conf,proc,numProcs,nodeName);
+      complete(conf,proc,numProcs,nodeName,log);
     }
   } else if(strcmp(conf.testName.c_str(), "star") == 0 && conf.center == -1){
     for(int i = 0; i < conf.iterations; ++i ){
       for(int j = 0; j < numProcs; ++j){
-        star(conf,j,proc,numProcs,nodeName);
+        star(conf,j,proc,numProcs,nodeName,log);
       }
     }
   } else if(strcmp(conf.testName.c_str(), "star") == 0 && conf.center > -1){
     for(int i = 0; i < conf.iterations; ++i ){
-        star(conf,conf.center,proc,numProcs,nodeName);
+        star(conf,conf.center,proc,numProcs,nodeName,log);
     }
   } else { //if(strcmp(conf.testName.c_str(), "average_time") == 0}){
     for(int i = 0; i < conf.iterations; ++i ){
       for(int j = 0; j < numProcs; ++j){
-        averagetime(conf,j,proc,numProcs,nodeName);
+        averagetime(conf,j,proc,numProcs,nodeName,log);
       }
     }
   } 
@@ -100,26 +103,26 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName){
   return true;
 }
 
-bool averagetime(TestConfig conf, int center, int proc, int numProcs, std::string nodeName)
+bool averagetime(TestConfig conf, int center, int proc, int numProcs, std::string nodeName, std::list<LogData>& log)
 {
   int token;
   storeTime(end);
   float delta;
   delta = timeDelta(start, end);
-  logger(LogData("initialize",nodeName,proc,-1,delta,"initialize"));
+  log.push_back(LogData("initialize",nodeName,proc,-1,delta,"initialize"));
   //Receive all messages if you are not center
   if (proc != center) {
     for(int i = 0; i < conf.messages; ++i ){
       MPI_Recv(&token, 1, MPI_INT, center, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       storeTime(end);
       delta = timeDelta(start, end);
-      logger(LogData(conf.testName,nodeName,proc,center,delta,"message received " + itoa(i)));
+      log.push_back(LogData(conf.testName,nodeName,proc,center,delta,"message received " + itoa(i)));
       //Send a response
       storeTime(start);
       MPI_Send(&token, 1, MPI_INT, center % numProcs, 0, MPI_COMM_WORLD);
       storeTime(end);
       delta = timeDelta(start, end);
-      logger(LogData(conf.testName,nodeName,proc,center,delta,"message sent " + itoa(i)));
+      log.push_back(LogData(conf.testName,nodeName,proc,center,delta,"message sent " + itoa(i)));
     }
   } else {
   // Set the token's value if you are center
@@ -132,12 +135,12 @@ bool averagetime(TestConfig conf, int center, int proc, int numProcs, std::strin
           MPI_Send(&token, 1, MPI_INT, j % numProcs, 0, MPI_COMM_WORLD);
           storeTime(end);
           delta = timeDelta(start, end);
-          logger(LogData(conf.testName,nodeName,proc,j,delta,"message sent " + itoa(i)));
+          log.push_back(LogData(conf.testName,nodeName,proc,j,delta,"message sent " + itoa(i)));
           //Receive responses
           MPI_Recv(&token, 1, MPI_INT, j, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
           storeTime(end);
           delta = timeDelta(start, end);
-          logger(LogData(conf.testName,nodeName,proc,j,delta,"message received " + itoa(i)));
+          log.push_back(LogData(conf.testName,nodeName,proc,j,delta,"message received " + itoa(i)));
       }
     }
     }
@@ -146,26 +149,26 @@ bool averagetime(TestConfig conf, int center, int proc, int numProcs, std::strin
   return true;
 }
 
-bool star(TestConfig conf, int center, int proc, int numProcs, std::string nodeName)
+bool star(TestConfig conf, int center, int proc, int numProcs, std::string nodeName, std::list<LogData>& log)
 {
   struct timeval token;
   float delta;
   storeTime(token); //This is dumb but it prevents negative times
   delta = timeDelta(start, token);
-  logger(LogData("initialize",nodeName,proc,-1,delta,"initialize"));
+  log.push_back(LogData("initialize",nodeName,proc,-1,delta,"initialize"));
   //Receive all messages if you are not center
   if (proc != center) {
     for(int i = 0; i < conf.messages; ++i ){
       MPI_Recv(&token, 1, MPI_INT, center, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       storeTime(end);
       delta = timeDelta(token, end);
-      logger(LogData(conf.testName,nodeName,proc,center,delta,"message received " + itoa(i)));
+      log.push_back(LogData(conf.testName,nodeName,proc,center,delta,"message received " + itoa(i)));
       //Send a response
       storeTime(token);
       MPI_Send(&token, 1, MPI_INT, center % numProcs, 0, MPI_COMM_WORLD);
       storeTime(end);
       delta = timeDelta(start, end);
-      logger(LogData(conf.testName,nodeName,proc,center,delta,"message sent " + itoa(i)));
+      log.push_back(LogData(conf.testName,nodeName,proc,center,delta,"message sent " + itoa(i)));
     }
   } else {
   // Set the token's value if you are center
@@ -177,12 +180,12 @@ bool star(TestConfig conf, int center, int proc, int numProcs, std::string nodeN
             MPI_Send(&token, 1, MPI_INT, j % numProcs, 0, MPI_COMM_WORLD);
             storeTime(end);
             delta = timeDelta(start, end);
-            logger(LogData(conf.testName,nodeName,proc,j,delta,"message sent " + itoa(i)));
+            log.push_back(LogData(conf.testName,nodeName,proc,j,delta,"message sent " + itoa(i)));
             //Receive responses
             MPI_Recv(&token, 1, MPI_INT, j, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             storeTime(end);
             delta = timeDelta(token, end);
-            logger(LogData(conf.testName,nodeName,proc,j,delta,"message received " + itoa(i)));
+            log.push_back(LogData(conf.testName,nodeName,proc,j,delta,"message received " + itoa(i)));
         }
       }
     }
@@ -191,13 +194,13 @@ bool star(TestConfig conf, int center, int proc, int numProcs, std::string nodeN
   return true;
 }
 
-bool complete(TestConfig conf, int proc, int numProcs, std::string nodeName)
+bool complete(TestConfig conf, int proc, int numProcs, std::string nodeName, std::list<LogData>& log)
 {
   struct timeval token;
   float delta;
   storeTime(token); //This is dumb but it prevents negative times
   delta = timeDelta(start, token);
-  logger(LogData("initialize",nodeName,proc,-1,delta,"initialize"));
+  log.push_back(LogData("initialize",nodeName,proc,-1,delta,"initialize"));
   //Receive all messages before your turn to send
   if (proc != 0) {
     for(int j = 0; j < proc; ++j){
@@ -205,7 +208,7 @@ bool complete(TestConfig conf, int proc, int numProcs, std::string nodeName)
         MPI_Recv(&token, 1, MPI_INT, j, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         storeTime(end);
         delta = timeDelta(token, end);
-        logger(LogData(conf.testName,nodeName,proc,j,delta,"message received " + itoa(i)));
+        log.push_back(LogData(conf.testName,nodeName,proc,j,delta,"message received " + itoa(i)));
       }
     }
   }
@@ -218,7 +221,7 @@ bool complete(TestConfig conf, int proc, int numProcs, std::string nodeName)
         MPI_Send(&token, 1, MPI_INT, j % numProcs, 0, MPI_COMM_WORLD);
         storeTime(end);
         delta = timeDelta(start, end);
-        logger(LogData(conf.testName,nodeName,proc,j,delta,"message sent " + itoa(i)));
+        log.push_back(LogData(conf.testName,nodeName,proc,j,delta,"message sent " + itoa(i)));
       } 
     }
   }
@@ -229,19 +232,19 @@ bool complete(TestConfig conf, int proc, int numProcs, std::string nodeName)
       MPI_Recv(&token, 1, MPI_INT, j, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       storeTime(end);
       delta = timeDelta(token, end);
-      logger(LogData(conf.testName,nodeName,proc,j,delta,"message received " + itoa(i)));
+      log.push_back(LogData(conf.testName,nodeName,proc,j,delta,"message received " + itoa(i)));
     }
   }
   return true;
 }
 
-bool traffic(TestConfig conf, int proc, int numProcs, std::string nodeName)
+bool traffic(TestConfig conf, int proc, int numProcs, std::string nodeName, std::list<LogData>& log)
 {
   int token = -1;
   float delta;  
   /*storeTime(end); //This is dumb but it prevents negative times
   delta = timeDelta(start, end);
-  logger(LogData("initialize",nodeName,proc,-1,delta,"initialize"));*/
+  log.push_back(LogData("initialize",nodeName,proc,-1,delta,"initialize"));*/
   //Set up processes to recieve
   if (proc != 0 && proc != numProcs - 1) {
     for(int i = 0; i < conf.messages; ++i ){
@@ -262,11 +265,11 @@ bool traffic(TestConfig conf, int proc, int numProcs, std::string nodeName)
       MPI_Send(&token, 1, MPI_INT, (numProcs -1), 0, MPI_COMM_WORLD);
       storeTime(end);
       delta = timeDelta(start, end);
-      logger(LogData(conf.testName,nodeName,proc,(numProcs -1),delta,"message sent " + itoa(i)));
+      log.push_back(LogData(conf.testName,nodeName,proc,(numProcs -1),delta,"message sent " + itoa(i)));
       MPI_Recv(&token, 1, MPI_INT, (numProcs -1), 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       storeTime(end);
       delta = timeDelta(start, end);
-      logger(LogData(conf.testName,nodeName,proc,(numProcs -1),delta,"message received " + itoa(i)));
+      log.push_back(LogData(conf.testName,nodeName,proc,(numProcs -1),delta,"message received " + itoa(i)));
     }
   } else if (proc == (numProcs - 1)) {
     // Now process n -1 can receive from the last process.
@@ -276,31 +279,31 @@ bool traffic(TestConfig conf, int proc, int numProcs, std::string nodeName)
       MPI_Recv(&token, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       storeTime(end);
       delta = timeDelta(start, end);
-      logger(LogData(conf.testName,nodeName,proc,0,delta,"message received " + itoa(i)));
+      log.push_back(LogData(conf.testName,nodeName,proc,0,delta,"message received " + itoa(i)));
       storeTime(start);
       MPI_Send(&token, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
       storeTime(end);
       delta = timeDelta(start, end);
-      logger(LogData(conf.testName,nodeName,proc,0,delta,"message sent " + itoa(i)));
+      log.push_back(LogData(conf.testName,nodeName,proc,0,delta,"message sent " + itoa(i)));
     }
   }
   return true;
 }
 
-bool ring(TestConfig conf, int proc, int numProcs, std::string nodeName)
+bool ring(TestConfig conf, int proc, int numProcs, std::string nodeName, std::list<LogData>& log)
 {
   struct timeval token;
   float delta;  
   storeTime(token); //This is dumb but it prevents negative times
   delta = timeDelta(start, token);
-  logger(LogData("initialize",nodeName,proc,-1,delta,"initialize"));
+  log.push_back(LogData("initialize",nodeName,proc,-1,delta,"initialize"));
   //Set up processes to recieve
   if (proc != 0) {
     for(int i = 0; i < conf.messages; ++i ){
       MPI_Recv(&token, 1, MPI_INT, proc - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       storeTime(end);
       delta = timeDelta(token, end);
-      logger(LogData(conf.testName,nodeName,proc,(proc - 1),delta,"message received " + itoa(i)));
+      log.push_back(LogData(conf.testName,nodeName,proc,(proc - 1),delta,"message received " + itoa(i)));
     }
   }
 
@@ -310,7 +313,7 @@ bool ring(TestConfig conf, int proc, int numProcs, std::string nodeName)
     MPI_Send(&token, 1, MPI_INT, (proc + 1) % numProcs, 0, MPI_COMM_WORLD);
     storeTime(end);
     delta = timeDelta(start, end);
-    logger(LogData(conf.testName,nodeName,proc,(proc + 1) % numProcs,delta,"message sent " + itoa(i)));
+    log.push_back(LogData(conf.testName,nodeName,proc,(proc + 1) % numProcs,delta,"message sent " + itoa(i)));
   } 
 
   // Now process 0 can receive from the last process.
@@ -319,17 +322,88 @@ bool ring(TestConfig conf, int proc, int numProcs, std::string nodeName)
       MPI_Recv(&token, 1, MPI_INT, numProcs - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       storeTime(end);
       delta = timeDelta(token, end);
-      logger(LogData(conf.testName,nodeName,proc,numProcs - 1,delta,"message received " + itoa(i)));
+      log.push_back(LogData(conf.testName,nodeName,proc,numProcs - 1,delta,"message received " + itoa(i)));
     }
   }
   return true;
 }
 
+bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
+{
+  if (proc != 0)
+  {
+    // child node. re-package all log data and send to master node.
+    int numLogs = log.size();
+    char name[MAX_STRING_LENGTH];
+    strcpy(name, log.begin()->testName.c_str());
+    char node[MAX_STRING_LENGTH];
+    strcpy(node, log.begin()->thisNode.c_str());
+    unsigned me = log.begin()->thisID;
+    unsigned yous [numLogs];
+    float time [numLogs];
+    char messages[numLogs][MAX_STRING_LENGTH];
+
+    int i = 0;
+    for (std::list<LogData>::iterator iter = log.begin(); iter != log.end(); ++iter)
+    {
+      time[i] = iter->timeDelta;
+      yous[i] = iter->thatID;
+      strcpy(messages[i], iter->message.c_str());
+      ++i;
+    }
+
+    MPI_Send(&numLogs, 1, MPI_INT, 0, 1, MPI_COMM_WORLD);
+    MPI_Send(&name, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, 0, 2, MPI_COMM_WORLD);
+    MPI_Send(&node, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, 0, 3, MPI_COMM_WORLD);
+    MPI_Send(&me, 1, MPI_UNSIGNED, 0, 4, MPI_COMM_WORLD);
+    MPI_Send(&yous, numLogs, MPI_UNSIGNED, 0, 5, MPI_COMM_WORLD);
+    MPI_Send(&time, numLogs * sizeof(float), MPI_FLOAT, 0, 6, MPI_COMM_WORLD);
+    MPI_Send(&messages, numLogs * MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, 0, 7, MPI_COMM_WORLD);
+
+  } else {
+    // master node.  receive logs from each process
+    for (int p = 1; p < numProcs; ++p)
+    {
+      int numLogs;
+      char name[MAX_STRING_LENGTH];
+      char node[MAX_STRING_LENGTH];
+      unsigned me;
+      
+      MPI_Recv(&numLogs, 1, MPI_INT, p, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+      char messages[numLogs][MAX_STRING_LENGTH];
+      float time [numLogs];
+      unsigned yous[numLogs];
+
+      MPI_Recv(&name, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(&node, MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(&me, 1, MPI_UNSIGNED, p, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(&yous, numLogs, MPI_UNSIGNED, p, 5, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(&time, numLogs * sizeof(float), MPI_FLOAT, p, 6, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      MPI_Recv(&messages, numLogs * MAX_STRING_LENGTH * sizeof(char), MPI_CHAR, p, 7, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      for (int i = 0; i < numLogs; ++i)
+      {
+        float logTime = time[i];
+        char logMsg [MAX_STRING_LENGTH];
+        strcpy(logMsg, messages[i]);  
+        unsigned you = yous[i];
+        log.push_back(LogData(name, node, me, you, logTime, logMsg));
+      }      
+    }
+    for (std::list<LogData>::iterator iter = log.begin(); iter != log.end(); ++iter)
+    {
+      logger((*iter));
+    }
+  }
+  return true;
+}
 
 int main (int argc, char** argv)
 {
   TestConfig conf;
   
+  std::list<LogData> log;
+
   MPI_Init(NULL, NULL);
 
   // Get the number of processes
@@ -350,12 +424,13 @@ int main (int argc, char** argv)
     std::cout << "usage: <testName (ring/complete/star/average_time)> <# iterations> <# messages> <(opt) star center process>\n";
   }
   else {
-    if (!runTest(conf, world_rank, world_size, nodeName)) {
+    if (!runTest(conf, world_rank, world_size, nodeName, log)) {
       MPI_Finalize();
       return EXIT_FAILURE;
     }
     else
     {
+      handleLogs(world_rank, world_size, log);
       MPI_Finalize();
       return EXIT_SUCCESS;
     }
