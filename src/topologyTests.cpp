@@ -349,7 +349,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
     {
       time[i] = iter->timeDelta;
       yous[i] = iter->thatID;
-      strcpy(messages[i], iter->message.c_str());
+      strcpy(messages[i], iter->message.substr(0,MAX_STRING_LENGTH).c_str());
       ++i;
     }
 
@@ -388,7 +388,7 @@ bool handleLogs(int proc, int numProcs, std::list<LogData>& log)
       {
         float logTime = time[i];
         char logMsg [MAX_STRING_LENGTH];
-        strcpy(logMsg, messages[i]);  
+        strncpy(logMsg, (messages + (i * MAX_STRING_LENGTH)), MAX_STRING_LENGTH);
         unsigned you = yous[i];
         log.push_back(LogData(name, node, me, you, logTime, logMsg));
       }   
