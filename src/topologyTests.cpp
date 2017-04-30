@@ -452,7 +452,13 @@ float timeDelta(timeval start, timeval end)
 
 void logger(LogData l)
 {
-  printf("%s,%s,%i,%i,%f,%s\n", l.testName.c_str(),l.thisNode.c_str(),l.thisID,l.thatID,l.timeDelta,l.message.c_str());
+  // printf("%s,%s,%i,%i,%f,%s\n", l.testName.c_str(),l.thisNode.c_str(),l.thisID,l.thatID,l.timeDelta,l.message.c_str());
+  std::cout << l.testName << "," 
+            << l.thisNode << "," 
+            << l.thisID << ","
+            << l.thatID << ","
+            << l.timeDelta << ","
+            << l.message <<"\n";
 }
 
 
