@@ -62,7 +62,7 @@ std::string itoa(int);
 bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName){
 
   if(proc == 0){
-     printf("%s,%s,%s,%s,%s\n","thisNode","thisID","thatID","timeDelta","message");
+     printf("%s,%s,%s,%s,%s,%s\n","testName","thisNode","thisID","thatID","timeDelta","message");
   }  
 
   storeTime(start);
@@ -71,7 +71,7 @@ bool runTest(TestConfig conf, int proc, int numProcs, std::string nodeName){
     for(int i = 0; i < conf.iterations; ++i ){
       ring(conf,proc,numProcs,nodeName);
     }
-  } else if(strcmp(conf.testName.c_str(), "traffic") == 0){
+  } else if(conf.testName.find("traffic") != std::string::npos){
     for(int i = 0; i < conf.iterations; ++i ){
       traffic(conf,proc,numProcs,nodeName);
     }
@@ -237,27 +237,21 @@ bool complete(TestConfig conf, int proc, int numProcs, std::string nodeName)
 
 bool traffic(TestConfig conf, int proc, int numProcs, std::string nodeName)
 {
-  int token;
+  int token = -1;
   float delta;  
-  bool separate = false;
-  storeTime(end); //This is dumb but it prevents negative times
+  /*storeTime(end); //This is dumb but it prevents negative times
   delta = timeDelta(start, end);
-  logger(LogData("initialize",nodeName,proc,-1,delta,"initialize"));
+  logger(LogData("initialize",nodeName,proc,-1,delta,"initialize"));*/
   //Set up processes to recieve
   if (proc != 0 && proc != numProcs - 1) {
     for(int i = 0; i < conf.messages; ++i ){
-      for(int j = 0; j < numProcs; ++j){
-        if((j != 0 && j != numProcs - 1) || separate ){
-          token = proc;
-          MPI_Send(&token, 1, MPI_INT, j, 0, MPI_COMM_WORLD);
-        }
+      for(int j = 1; j < numProcs - 1; ++j){
+        MPI_Send(&token, 1, MPI_INT, j, 0, MPI_COMM_WORLD);
       }
     } 
     for(int i = 0; i < conf.messages; ++i ){
-       for(int j = 0; j < numProcs; ++j){
-        if((j != 0 && j != numProcs - 1) || separate ){
-          MPI_Recv(&token, 1, MPI_INT, j, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        }
+      for(int j = 1; j < numProcs - 1; ++j){
+        MPI_Recv(&token, 1, MPI_INT, j, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       }
     }
   } else if (proc == 0) {
