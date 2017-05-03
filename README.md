@@ -66,3 +66,22 @@ here are examples for both applications:
 srun --mpi=pmi2 -n48 -w "node[3,4]" /home/<your.login>/<path>/<to>/csci5593-project/monteCarloPi testName 1000000 -b
 srun --mpi=pmi2 -n12 -w "node[3,4,5]" /home/<your.login>/<path>/<to>/csci5593-project/topologyTests testName 1000000 1
 ```
+
+### Program Parameters
+
+Topology Test takes several command line parameters.
+
+1. Test Name: The first parameter can be a predefinded tests, any other string will default to a baseline test. The following strings will run a predefinded test
+
+```
+	ring
+	star
+	complete
+	traffic
+```
+
+2. Iterations: The second parameter should be an integer. This will set the number of times the test will run in the execution. 
+
+3. Message Volume: The third parameter should be an integer. This will set the number of messages that are passed from each node in each iteration. 
+
+4. Center process: The fourth parameter is optional, and is only relevant in the star test. This parameter should be an integer and will represent which process will act as the center of the star topology. If this parameter is left blank the star test will iteratively test every process as the center process. 
