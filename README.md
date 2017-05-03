@@ -41,9 +41,9 @@ build.sh README.md  src  test
 3. compile a test application
 
 ```
-$ chmod 777 build.sh
-$ ./build.sh
-$ 
+mpic++ src/topologyTests.cpp -o topologyTests
+mpic++ src/topologyTests-baseline.cpp -o topoBaseline
+mpic++ src/monteCarloPi.cpp -o mcpi
 ```
 
 4. run 
@@ -63,8 +63,9 @@ where
 here are examples for both applications:
 
 ```
-srun --mpi=pmi2 -n48 -w "node[3,4]" /home/<your.login>/<path>/<to>/csci5593-project/monteCarloPi testName 1000000 -b
-srun --mpi=pmi2 -n12 -w "node[3,4,5]" /home/<your.login>/<path>/<to>/csci5593-project/topologyTests testName 1000000 1
+srun --mpi=pmi2 -n48 -w "node[3,4]" /home/<your.login>/<path>/<to>/csci5593-project/mcpi myPiTest 1000000 -b
+srun --mpi=pmi2 -n12 -w "node[3,4,5]" /home/<your.login>/<path>/<to>/csci5593-project/topologyTests ring 1000 1
+srun --mpi=pmi2 -n12 -w "node[3,4,5]" /home/<your.login>/<path>/<to>/csci5593-project/topoBaseline myTopoTest 1000 1
 ```
 
 ### Program Parameters
@@ -79,6 +80,8 @@ Topology Test takes several command line parameters.
 	complete
 	traffic
 ```
+
+- note: if you want to explore increasing the "messages" parameter, run topoBaseline.
 
 2. Iterations: The second parameter should be an integer. This will set the number of times the test will run in the execution. 
 
